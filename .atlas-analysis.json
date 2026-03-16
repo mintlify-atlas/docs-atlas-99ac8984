@@ -1,0 +1,84 @@
+{
+  "projectType": "frontend",
+  "projectName": "Low-Poly Ocean",
+  "projectDescription": "An interactive educational web experience exploring 10 endangered marine animals in Thai waters, rendered as animated low-poly polygon art with parallax scroll effects and ambient ocean sounds.",
+  "theme": "palm",
+  "primaryColor": "#1A6B7A",
+  "lightColor": "#A8D8E0",
+  "darkColor": "#0D3D47",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Overview",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Project Structure",
+            "pages": ["structure/overview", "structure/pages", "structure/components", "structure/data"]
+          }
+        ]
+      },
+      {
+        "tab": "Features",
+        "groups": [
+          {
+            "group": "Core Features",
+            "pages": ["features/stages", "features/ocean-explorer", "features/animal-details", "features/polygon-art"]
+          },
+          {
+            "group": "UI & Animation",
+            "pages": ["features/parallax", "features/low-poly-animals", "features/underwater-environment", "features/sound-controller"]
+          }
+        ]
+      },
+      {
+        "tab": "Animals",
+        "groups": [
+          {
+            "group": "Marine Life",
+            "pages": ["animals/overview", "animals/leatherback-turtle", "animals/dugong", "animals/irrawaddy-dolphin", "animals/pink-dolphin", "animals/stingray", "animals/orca", "animals/sperm-whale", "animals/blue-whale", "animals/sawfishes", "animals/ronin"]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Setup",
+            "pages": ["development/installation", "development/configuration"]
+          },
+          {
+            "group": "Customization",
+            "pages": ["development/adding-animals", "development/polygon-data"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Low-poly polygon art visualization of 10 endangered Thai marine animals",
+    "Immersive parallax scroll experience with underwater atmosphere",
+    "Three-stage interactive journey: Explore → Details → Polygon Art",
+    "3D underwater environment built with React Three Fiber and Three.js",
+    "Bilingual animal information (Thai/English) covering introduction, threats, and conservation",
+    "Ambient ocean sound controller with background music",
+    "Animated shard assembly/disassembly for each animal on the detail page",
+    "Responsive design with mobile-friendly scrubber navigation",
+    "Marine snow particle effects and animated light rays",
+    "Depth indicator showing scroll progress as ocean depth (0–2000m)"
+  ],
+  "publicApiSurface": [
+    "ANIMALS array (src/data/animalConfig.js) - polygon shard definitions for each animal",
+    "animalDetails.json (src/data/animalDetails.json) - bilingual animal info (intro, threat, solution)",
+    "ParallaxElement component (src/pages/Landing.jsx) - reusable scroll-driven parallax wrapper",
+    "AnimalInfoBox component (src/pages/Landing.jsx) - animal information overlay card",
+    "UnderwaterEnvironment component (src/components/UnderwaterEnvironment.jsx) - Three.js ocean scene",
+    "SoundController component (src/components/SoundController.jsx) - audio toggle UI",
+    "AnimalCard component (src/components/AnimalCard.jsx) - individual animal display card",
+    "PreviewStage component (src/components/PreviewStage.jsx) - stage selection preview",
+    "Routes: /stages, /landing, /detail?id={animalId}, /order, /polygon"
+  ]
+}
