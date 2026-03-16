@@ -1,0 +1,88 @@
+---
+title: "Introduction"
+description: "An interactive educational web experience exploring 10 endangered marine animals in Thai waters, rendered as animated low-poly polygon art."
+---
+
+## What is Low-Poly Ocean?
+
+Low-Poly Ocean is an immersive, scroll-driven web experience built with React, Three.js, and Framer Motion. It takes users on a visual journey through the ocean to meet 10 endangered or threatened marine species found in Thai waters — each rendered as a beautiful, animated low-poly polygon artwork.
+
+The project blends conservation awareness with digital art, using geometric polygon shards to represent each animal. The fragmented, reconstructable nature of the artwork mirrors the fragility of marine ecosystems: if one piece is missing, the whole picture falls apart.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get the project running locally in minutes
+  </Card>
+  <Card title="Project Structure" icon="folder-tree" href="/structure/overview">
+    Understand how the codebase is organized
+  </Card>
+  <Card title="Features" icon="sparkles" href="/features/stages">
+    Explore the interactive stages and animations
+  </Card>
+  <Card title="Marine Animals" icon="fish" href="/animals/overview">
+    Meet the 10 endangered species featured
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Low-Poly Animal Art" icon="shapes">
+    Each animal is built from dozens of CSS polygon shards with precise clip-path coordinates and colors sampled from real photographs.
+  </Card>
+  <Card title="Parallax Scroll Experience" icon="layers">
+    Smooth spring-based parallax animations powered by Framer Motion's `useScroll` and `useSpring` hooks create an immersive underwater descent.
+  </Card>
+  <Card title="3D Underwater Environment" icon="water">
+    A full 3D ocean scene built with React Three Fiber (@react-three/fiber) and Three.js renders in the background.
+  </Card>
+  <Card title="Three-Stage Journey" icon="map">
+    Users progress through three stages: Ocean Explorer → Animal Details → Why Polygon Art?
+  </Card>
+  <Card title="Bilingual Content" icon="globe">
+    All animal information is available in both English and Thai, covering introduction, threats, and conservation solutions.
+  </Card>
+  <Card title="Ambient Sound" icon="music">
+    An ambient ocean soundscape plays in the background with a user-controlled sound toggle.
+  </Card>
+</CardGroup>
+
+## The 10 Featured Animals
+
+All animals featured in Low-Poly Ocean are endangered or threatened species found in Thai waters:
+
+| Animal | Thai Name | Status |
+|--------|-----------|--------|
+| Leatherback Turtle | เต่ามะเฟือง | Protected Wildlife |
+| Dugong | พะยูน | Protected Wildlife |
+| Irrawaddy Dolphin | โลมาอิรวดี | Critically Endangered |
+| Pink Dolphin (Indo-Pacific Humpback) | โลมาชมพู / โลมาหลังโหนก | Vulnerable |
+| Stingray | ปลากระเบน | Various |
+| Orca (Killer Whale) | วาฬเพชฌฆาต | Data Deficient |
+| Sperm Whale | วาฬสเปิร์ม | Vulnerable |
+| Blue Whale | วาฬสีน้ำเงิน | Protected Wildlife (Thailand) |
+| Sawfishes | ปลาฉลามเลื่อย | Critically Endangered |
+| Ronin (Manta Ray) | ปลากระเบนปีศาจ | Vulnerable |
+
+## Technology Stack
+
+<CardGroup cols={3}>
+  <Card title="React 19" icon="react">
+    Component-based UI with React Router for client-side navigation
+  </Card>
+  <Card title="Framer Motion" icon="wand-magic-sparkles">
+    Spring physics animations, scroll-driven parallax, and page transitions
+  </Card>
+  <Card title="Three.js / R3F" icon="cube">
+    3D underwater environment rendered with React Three Fiber
+  </Card>
+  <Card title="Vite" icon="bolt">
+    Lightning-fast development server and production build tool
+  </Card>
+  <Card title="CSS Polygon Art" icon="shapes">
+    CSS `clip-path: polygon()` used to create low-poly animal shards
+  </Card>
+  <Card title="React Router v7" icon="route">
+    Client-side routing for seamless page transitions
+  </Card>
+</CardGroup>

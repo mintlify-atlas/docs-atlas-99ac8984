@@ -1,0 +1,123 @@
+---
+title: UnderwaterEnvironment component
+description: The animated background system built with Framer Motion that renders floating shards, bioluminescent particles, and modal decorations.
+---
+
+`UnderwaterEnvironment` and its companion exports are defined in `src/components/UnderwaterEnvironment.jsx`. They use **Framer Motion** (not React Three Fiber) to animate layered visual effects that give the app its deep-sea atmosphere.
+
+<Note>
+Despite the name, this component does not use `@react-three/fiber` or `@react-three/drei`. All rendering is done with `motion.div` elements and CSS.
+</Note>
+
+## Exports
+
+```js
+import UnderwaterEnvironment, {
+  ShardExplosion,
+  ModalDecorations,
+  BackgroundShards,
+  VibrantParticles,
+  SurfaceGlow,
+} from "../components/UnderwaterEnvironment";
+```
+
+### `UnderwaterEnvironment` (default export)
+
+The main background component. Renders three sub-components as a single unit:
+
+```jsx
+const UnderwaterEnvironment = () => (
+  <>
+    <BackgroundShards />
+    <VibrantParticles />
+    <SurfaceGlow />
+  </>
+);
+```
+
+Used as a full-bleed background in both the Ocean Explorer and Detail pages:
+
+```jsx
+<div className="landing-bg">
+  <UnderwaterEnvironment />
+  <MarineSnow />
+</div>
+```
+
+### `BackgroundShards`
+
+Renders 20 floating polygon crystals that rise continuously from the bottom to the top of the screen. Each shard is a `motion.div` generated with `useMemo`:
+
+- **Size** — 15–45 px
+- **Colours** — white, sky blue (`#7dd3fc`), bright blue (`#38bdf8`, `#0ea5e9`), teal (`#2dd4bf`)
+- **Opacity** — 0.05–0.20 (very subtle)
+- **Duration** — 10–25 s per cycle
+- **Delay** — 0–10 s stagger
+- **Motion** — rises from `110vh` to `-10vh`, rotates a full 360°, and drifts horizontally by a random ±20 px offset
+
+```js
+animate={{
+  y: ["110vh", "-10vh"],
+  rotate: [s.rotate, s.rotate + 360],
+  x: [0, s.offset, 0],
+}}
+transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, ease: "linear" }}
+```
+
+### `VibrantParticles`
+
+Renders 30 bioluminescent plankton particles. Unlike `BackgroundShards`, these float in place and pulse:
+
+- **Size** — 2–6 px
+- **Position** — random `left` and `top` percentages across the full viewport
+- **Behaviour** — opacity cycles 0.2 → 0.8 → 0.2, scale pulses 1 → 1.5 → 1, and position drifts by a random ±15 px
+- **Duration** — 5–10 s per cycle
+
+### `SurfaceGlow`
+
+A single static `<div className="surface-glow" />` that applies a CSS radial gradient or glow effect at the top of the screen, simulating sunlight from the surface.
+
+### `ShardExplosion`
+
+A burst effect triggered by user interaction. Accepts `x`, `y` (viewport coordinates), and `onComplete` (callback when animation finishes):
+
+```jsx
+<ShardExplosion
+  x={event.clientX}
+  y={event.clientY}
+  onComplete={() => removeExplosion(id)}
+/>
+```
+
+10 triangular shards fly outward from the click point:
+
+- **Colours** — white, `#7dd3fc`, `#38bdf8`, `#2dd4bf`
+- **Speed** — 60–180 px travel distance
+- **Size** — 8–22 px
+- **Duration** — 0.6 s, `easeOut`
+- **Clean-up** — `onComplete` fires when the first shard's animation ends, so the component can be removed from state
+
+The explosion container is positioned with `position: fixed` at the click coordinates via inline style.
+
+### `ModalDecorations`
+
+Decorative elements rendered inside the detail modal's glass card:
+
+- **Corner brackets** — four `<div>` elements with CSS classes `.modal-corner.top-left`, `.top-right`, `.bottom-left`, `.bottom-right`
+- **Floating mini-shards** — 10 `motion.div` elements that gently rise, rotate ±15°, and pulse in opacity (0.15 → 0.4 → 0.15) on staggered 6–16 s loops
+
+```jsx
+animate={{ y: [0, -30, 0], rotate: [0, 15, 0], opacity: [0.15, 0.4, 0.15] }}
+transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
+```
+
+## Usage by page
+
+| Page | Components used |
+|---|---|
+| `Landing.jsx` | `UnderwaterEnvironment` (default) |
+| `DetailPage.jsx` | `UnderwaterEnvironment`, `ShardExplosion`, `ModalDecorations` |
+
+## Styling
+
+All visual styles for this component system are in `UnderwaterEnvironment.css`. The component file itself has no inline layout styles other than positioning values set in Framer Motion `style` props.

@@ -1,0 +1,168 @@
+---
+title: Polygon art page
+description: The horizontal parallax explainer at /polygon that reveals the conservation philosophy behind the low-poly art style.
+---
+
+The Polygon Art page (`/polygon`) is a horizontal scroll scene that explains why polygon art was chosen as the visual language for this project. As you scroll vertically, three depth layers, a jumping orca, a polar bear, and two philosophy message boxes all move at different speeds to create a sense of depth and narrative.
+
+## How scrolling works
+
+The page uses a tall vertical container (`polygon-page-container`) to generate scroll distance. `useScroll` tracks `scrollYProgress` (0–1) against this container:
+
+```js
+const { scrollYProgress } = useScroll({
+  target: containerRef,
+  offset: ["start start", "end end"],
+});
+```
+
+A spring smooths the raw progress before it drives the horizontal transforms:
+
+```js
+const smoothProgress = useSpring(scrollYProgress, {
+  stiffness: 60,
+  damping: 35,
+  restDelta: 0.001,
+});
+```
+
+The actual horizontal travel distance is the width of the widest layer image minus the viewport width, measured after images load:
+
+```js
+const travelDistance = Math.max(0, maxWidth - viewportWidth);
+```
+
+## Three-layer parallax
+
+Three PNG layers are stacked vertically but scroll horizontally at different speeds, creating a depth illusion:
+
+| Layer | File | Parallax multiplier | Effect |
+|---|---|---|---|
+| Bottom | `bottom_layer.webp` | 0.7× | Slowest — farthest background |
+| Middle | `middle_layer.webp` | 0.85× | Mid-speed — midground |
+| Top | `top_layer.webp` | 1.0× | Full speed — closest foreground |
+
+```js
+const bgXBottom = useTransform(smoothProgress, [0, 1], [0, -travelDistance * 0.7]);
+const bgXMiddle = useTransform(smoothProgress, [0, 1], [0, -travelDistance * 0.85]);
+const bgXTop    = useTransform(smoothProgress, [0, 1], [0, -travelDistance]);
+```
+
+A paper ship (`paperShip.webp`) bobs gently and moves slightly rightward as the scene scrolls, using a sine wave for the vertical bobbing:
+
+```js
+y: useTransform(smoothProgress, (v) => Math.sin(v * 20) * 10)
+```
+
+## Orca jump animation
+
+The orca (`orca.webp`) performs a full arc jump during the middle segment of the scroll (progress 0.3–0.85). Its position is driven by five-point `useTransform` keyframes:
+
+```js
+// Vertical arc: dives below frame, leaps to peak, falls back
+const orcaJumpY = useTransform(
+  smoothProgress,
+  [0.3,  0.45, 0.6,  0.75, 0.85],
+  [650,  100,  -30,  100,  650]
+);
+
+// Rotation: tilts forward on ascent, back on descent
+const orcaRotate = useTransform(
+  smoothProgress,
+  [0.3,  0.45, 0.6, 0.75,  0.85],
+  [50,   60,   0,  -60,   -85]
+);
+```
+
+The orca also travels horizontally, synced to the middle layer's parallax track but with additional forward surge during the jump window:
+
+```js
+const orcaX = useTransform(
+  smoothProgress,
+  [0,    0.3,                          0.6,                          0.85,                         1],
+  [baseOrcaXStart, baseOrcaXStart - travelDistance * 0.15,
+   baseOrcaXStart - travelDistance * 0.8, baseOrcaXStart - travelDistance * 1.5, baseOrcaXEnd]
+);
+```
+
+## Conservation message boxes
+
+Two message boxes explain the philosophy behind the polygon art style:
+
+<CardGroup cols={2}>
+  <Card title="Orca message box" icon="fish">
+    Appears while the orca is jumping (progress 0.4–0.82). Explains that the core of this project is to show that these animals are disappearing, and that geometric shapes assembled into a form convey fragility: if any piece goes missing, the whole image collapses — just like an ecosystem.
+  </Card>
+  <Card title="Bear message box" icon="paw-print">
+    Appears alongside the polar bear from progress 0.75 onward. Defines polygon art / low-poly as a digital art style using minimal polygons, rooted in early computer graphics limitations that have since become a popular aesthetic in games, video, and illustration.
+  </Card>
+</CardGroup>
+
+The orca message box syncs its horizontal position with `bgXMiddle` so it moves with the scene:
+
+```js
+<motion.div
+  className="orca-message-box"
+  style={{
+    opacity: orcaMessageOpacity,
+    scale: orcaMessageScale,
+    x: bgXMiddle,
+  }}
+/>
+```
+
+## Polar bear reveal
+
+At progress 0.75, a polar bear (`bear.webp`) slides in from the right edge using a dedicated, slightly faster spring:
+
+```js
+const bearSpring = useSpring(smoothProgress, {
+  stiffness: 45,
+  damping: 30,
+});
+
+const bearX       = useTransform(bearSpring, [0.75, 0.92], [450, 0]);
+const bearOpacity = useTransform(bearSpring, [0.75, 0.85, 0.92], [0, 1, 1]);
+```
+
+The bear is rendered in a `.bear-flip-container` wrapper that mirrors it horizontally via CSS, so the bear faces the content rather than the edge.
+
+## Mobile scrubber
+
+On touch devices where vertical scrolling drives the horizontal scene, a range input scrubber provides an alternative navigation method. It is shown only on mobile and tablet viewports (controlled via CSS).
+
+The scrubber syncs bidirectionally with scroll:
+
+```js
+// scroll → slider
+useMotionValueEvent(scrollYProgress, "change", (v) => {
+  setSliderValue(v * 100);
+});
+
+// slider → scroll
+const handleSliderChange = (e) => {
+  const val = Number(e.target.value) / 100;
+  const maxScroll = container.scrollHeight - window.innerHeight;
+  window.scrollTo({ top: val * maxScroll });
+};
+```
+
+A hint overlay is shown until the user scrolls past 2% of the page.
+
+## Audio
+
+Rowing sounds play while you are actively scrolling. The audio is loaded from a remote URL at component mount:
+
+```js
+const audio = new Audio(
+  "https://www.orangefreesounds.com/wp-content/uploads/2015/06/Rowing.mp3"
+);
+audio.loop = true;
+audio.volume = 0; // silent by default
+```
+
+When a `scrollYProgress` change event fires, the volume is raised to 0.08 (very subtle). A 400 ms timeout after the last scroll event fades the volume back to 0. An audio toggle button lets users disable this behaviour entirely.
+
+<Note>
+Browser autoplay policies block audio before user interaction. The page handles this gracefully: if `audio.play()` is rejected, it retries on the next scroll event.
+</Note>

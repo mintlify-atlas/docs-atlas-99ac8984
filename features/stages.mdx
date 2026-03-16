@@ -1,0 +1,101 @@
+---
+title: Stages page
+description: The hub page that lets users choose between the three learning experiences in Low-Poly Ocean.
+---
+
+The Stages page (`/stages`) is the entry point of Low-Poly Ocean. It presents three full-height vertical tabs — one for each section of the experience — and an intro sequence that plays on first visit.
+
+## Stage structure
+
+Each stage is defined in the `stagesData` array in `Stages.jsx`:
+
+```js
+const stagesData = [
+  {
+    id: 1,
+    title: "สำรวจท้องทะเล",
+    subtitle: "ร่วมสำรวจและทำความรู้จักกับเหล่า 10 สัตว์ทะเลหายาก...",
+    bgClass: "bg-research",
+    route: "/landing",
+  },
+  {
+    id: 2,
+    title: "รายละเอียด",
+    subtitle: "เจาะลึกข้อมูลเชิงลึกของแต่ละสายพันธุ์ที่น่าสนใจ",
+    bgClass: "bg-detail",
+    route: "/detail",
+  },
+  {
+    id: 3,
+    title: "ทำไมต้อง Polygon",
+    subtitle: "เข้าใจว่าทำไม Polygon ถึงเป็นเครื่องมือที่ดีที่สุดสำหรับการอนุรักษ์",
+    bgClass: "yPolygon",
+    route: "/polygon",
+  },
+];
+```
+
+Each stage object has these fields:
+
+<ParamField path="id" type="number">
+  Sequential stage number displayed in the circular badge on each tab.
+</ParamField>
+
+<ParamField path="title" type="string">
+  The stage heading shown both in the collapsed tab and in the expanded info panel.
+</ParamField>
+
+<ParamField path="subtitle" type="string">
+  A short description of the stage, shown only when the tab is expanded or previewed.
+</ParamField>
+
+<ParamField path="bgClass" type="string">
+  CSS class applied to the tab element that controls its background image or color. One of `bg-research`, `bg-detail`, or `yPolygon`.
+</ParamField>
+
+<ParamField path="route" type="string">
+  React Router path that the user navigates to when they select this stage.
+</ParamField>
+
+## Desktop behavior
+
+On screens wider than 768 px, the three tabs sit side by side. Hovering over a tab expands it horizontally and reveals the `stage-info` panel showing the full title and subtitle. Clicking the tab navigates immediately to `stage.route`.
+
+## Mobile behavior
+
+On screens 768 px and narrower, tapping a tab does not navigate immediately. Instead, the first tap sets `mobileSelected` to that stage's id, which renders a full-screen `mobile-preview` overlay showing the stage title, subtitle, and a call-to-action button ("เข้าสู่เส้นทางนี้ →"). A second tap on the overlay (or the CTA button) triggers navigation. The overlay also has a close button (`✕`) that dismisses the preview without navigating.
+
+```jsx
+// First tap: preview
+setMobileSelected(stage.id);
+
+// Second tap on the same stage: navigate
+if (mobileSelected === stage.id) navigate(stage.route);
+```
+
+## Intro sequence
+
+The first time a user visits the Stages page in a session, a two-step intro sequence plays before the tabs become interactive.
+
+- **Intro1** — the opening screen. Calls `onNext` to proceed to step 2.
+- **Intro2** — the second screen. Calls `onNext` to dismiss the intro and show the tabs.
+
+The current step is tracked in `introStep` (1 → 2 → 0). Once the intro has been dismissed, the module-level flag `hasSeenIntroGlobal` is set to `true` so subsequent page visits skip the intro within the same browser session.
+
+If navigation happens via React Router with `state: { skipIntro: true }` (for example, when returning from an experience page), the intro is bypassed entirely:
+
+```jsx
+// Navigate back to Stages without replaying the intro
+navigate("/stages", { state: { skipIntro: true } });
+```
+
+## Navigation flow
+
+```
+/stages
+  ├─ Stage 1 → /landing   (Ocean Explorer scroll experience)
+  ├─ Stage 2 → /detail    (Animal detail viewer)
+  └─ Stage 3 → /polygon   (Polygon art explainer)
+```
+
+All three experience pages include a back button that returns to `/stages` with `skipIntro: true`, so users can switch freely between experiences without sitting through the intro again.

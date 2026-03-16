@@ -1,0 +1,230 @@
+---
+title: Data layer
+description: How animal polygon data and bilingual educational content are structured in Low-Poly Ocean.
+---
+
+All static data lives in `src/data/`. Two files drive the entire animal experience: `animalConfig.js` for visual polygon data and `animalDetails.json` for educational content.
+
+## animalConfig.js
+
+**File:** `src/data/animalConfig.js`
+
+Exports a single `ANIMALS` array. Each entry defines one animal's full polygon shard illustration.
+
+```js
+import { ANIMALS } from './data/animalConfig';
+```
+
+### Animal object shape
+
+```js
+{
+  id: "irrawaddyDolphin",   // Unique identifier — matches animalDetails.json
+  name: "IrrawaddyDolphin", // PascalCase display name
+  stageWidth: 1600,          // Canvas reference width in px
+  stageHeight: 900,          // Canvas reference height in px
+  shards: [ /* Shard[] */ ]
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Camel-case unique identifier. Used as the `?id` query parameter in `/detail?id={id}` and as the lookup key in `animalDetails.json`.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  PascalCase name used internally. Not the display name — use `animalDetails.json` for user-facing names.
+</ResponseField>
+
+<ResponseField name="stageWidth" type="number" required>
+  The reference width (in pixels) against which all `clipPath` percentage values are calculated. Always `1600` for the current animals.
+</ResponseField>
+
+<ResponseField name="stageHeight" type="number" required>
+  The reference height (in pixels) against which all `clipPath` percentage values are calculated. Always `900` for the current animals.
+</ResponseField>
+
+<ResponseField name="shards" type="Shard[]" required>
+  Array of polygon shard definitions. Each animal has up to ~125 shards.
+</ResponseField>
+
+### Shard object shape
+
+```js
+{
+  clipPath: "polygon(7.313% 48.222%, 7.688% 52.444%, 4.742% 54.000%, ...)",
+  color: "#C0CECE",
+  order: 7,
+  shard: 1,
+}
+```
+
+<ResponseField name="clipPath" type="string" required>
+  A CSS `clip-path` polygon value using percentage coordinates relative to the animal's `stageWidth` × `stageHeight` bounding box.
+</ResponseField>
+
+<ResponseField name="color" type="string" required>
+  Hex color for this polygon shard, applied as `background-color`.
+</ResponseField>
+
+<ResponseField name="order" type="number" required>
+  Animation order index. `DetailPage` uses this to sequence the shard-assembly animation so shards fly into place in a deliberate order rather than all at once.
+</ResponseField>
+
+<ResponseField name="shard" type="number" required>
+  The shard's index within the animal (1-based). Used as a React key.
+</ResponseField>
+
+### Supported animals
+
+The `ANIMALS` array currently contains 10 entries:
+
+| id | Common name |
+| --- | --- |
+| `irrawaddyDolphin` | Irrawaddy Dolphin |
+| `dolphin` | Dolphin |
+| `stingray` | Stingray |
+| `dugong` | Dugong |
+| `turtle` | Leatherback Turtle |
+| `ronin` | Ronin |
+| `sawfishes` | Sawfish |
+| `orca` | Orca |
+| `spermWhale` | Sperm Whale |
+| `blueWhale` | Blue Whale |
+
+## animalDetails.json
+
+**File:** `src/data/animalDetails.json`
+
+Contains bilingual (Thai and English) educational content for each animal, plus localised topic label strings.
+
+```js
+import animalDetails from './data/animalDetails.json';
+
+const animal = animalDetails.animals.find(a => a.id === 'turtle');
+const topicLabel = animalDetails.topics.intro; // "ทำความรู้จัก"
+```
+
+### Top-level shape
+
+```json
+{
+  "topics": { ... },
+  "animals": [ ... ]
+}
+```
+
+<ResponseField name="topics" type="object" required>
+  Localised labels for the three content tabs shown on `DetailPage`.
+
+  <Expandable title="topics properties">
+    <ResponseField name="topics.intro" type="string">
+      Label for the introduction tab. Value: `"ทำความรู้จัก"`
+    </ResponseField>
+    <ResponseField name="topics.threat" type="string">
+      Label for the threats tab. Value: `"ภัยคุกคาม"`
+    </ResponseField>
+    <ResponseField name="topics.solution" type="string">
+      Label for the conservation solutions tab. Value: `"แนวทางการแก้ไข"`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="animals" type="AnimalDetail[]" required>
+  Array of animal detail objects. Order does not need to match `ANIMALS` in `animalConfig.js`; lookups are always done by `id`.
+</ResponseField>
+
+### AnimalDetail object shape
+
+```json
+{
+  "id": "turtle",
+  "nameEN": "Leatherback Turtle",
+  "nameTH": "เต่ามะเฟือง",
+  "content": {
+    "intro": "...",
+    "threat": "...",
+    "solution": "..."
+  }
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Must exactly match the `id` field of the corresponding entry in `ANIMALS`.
+</ResponseField>
+
+<ResponseField name="nameEN" type="string" required>
+  English common name, used as the display label in `AnimalCard` and `DetailPage`.
+</ResponseField>
+
+<ResponseField name="nameTH" type="string" required>
+  Thai common name, displayed alongside the English name.
+</ResponseField>
+
+<ResponseField name="content" type="object" required>
+  The three educational content blocks for this animal.
+
+  <Expandable title="content properties">
+    <ResponseField name="content.intro" type="string">
+      Introductory paragraph about the animal's biology and habitat.
+    </ResponseField>
+    <ResponseField name="content.threat" type="string">
+      Description of the main threats the animal faces in Thai waters.
+    </ResponseField>
+    <ResponseField name="content.solution" type="string">
+      Suggested conservation actions and solutions.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Adding a new animal
+
+To add an eleventh (or later) animal to the experience, you need to update both data files in sync.
+
+<Steps>
+  <Step title="Add the polygon shards to animalConfig.js">
+    Append a new object to the `ANIMALS` array. Assign a unique camelCase `id`, set `stageWidth: 1600` and `stageHeight: 900`, and populate the `shards` array with your polygon definitions.
+
+    ```js
+    {
+      id: "mantraRay",
+      name: "MantraRay",
+      stageWidth: 1600,
+      stageHeight: 900,
+      shards: [
+        {
+          clipPath: "polygon(...)",
+          color: "#A3C4D8",
+          order: 1,
+          shard: 1,
+        },
+        // ...
+      ]
+    }
+    ```
+  </Step>
+
+  <Step title="Add the bilingual content to animalDetails.json">
+    Append a new object to the `animals` array. Use the same `id` you chose in the previous step.
+
+    ```json
+    {
+      "id": "mantraRay",
+      "nameEN": "Manta Ray",
+      "nameTH": "กระเบนราหู",
+      "content": {
+        "intro": "...",
+        "threat": "...",
+        "solution": "..."
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Verify the IDs match">
+    The `id` in `animalConfig.js` and `animalDetails.json` must be identical. `DetailPage` uses the URL query parameter `?id=` to look up both sources simultaneously — a mismatch will cause the detail view to fail silently.
+  </Step>
+</Steps>
+
+<Warning>
+  The `clipPath` percentage values in each shard are relative to the animal's `stageWidth` and `stageHeight`. If you use a different coordinate space when generating shards, update those fields accordingly — otherwise the illustration will render at the wrong scale.
+</Warning>

@@ -1,0 +1,164 @@
+---
+title: ParallaxElement component
+description: A reusable Framer Motion wrapper that applies scroll-linked y, x, scale, rotate, and opacity transforms to any content.
+---
+
+`ParallaxElement` is an internal component defined in `Landing.jsx` that attaches a `useScroll` observer to its element and drives multiple simultaneous transform values through a spring-smoothed progress value.
+
+## Usage
+
+```jsx
+<ParallaxElement
+  yRange={["40%", "0%", "-10%"]}
+  xRange={["-30%", "0%", "5%"]}
+  scaleRange={[0.8, 1, 0.9]}
+  rotateRange={["-10deg", "0deg", "5deg"]}
+  opacityRange={[0, 1, 1]}
+  offset={["start end", "end start"]}
+  className="my-class"
+  style={{ zIndex: 10 }}
+>
+  <img src={animal} alt="" />
+</ParallaxElement>
+```
+
+## Props
+
+<ParamField path="yRange" type="string[]" default={['"0%"', '"0%"']}>
+  Vertical translation from the element's natural position. Value when the element **enters** the viewport at the bottom of the screen maps to index 0; value when it **exits** at the top maps to the last index.
+</ParamField>
+
+<ParamField path="xRange" type="string[]" default={['"0%"', '"0%"']}>
+  Horizontal translation. Follows the same enter → exit mapping as `yRange`.
+</ParamField>
+
+<ParamField path="scaleRange" type="number[] | undefined">
+  Uniform scale factor. When omitted, no scale transform is applied.
+</ParamField>
+
+<ParamField path="rotateRange" type="string[] | undefined">
+  Rotation in CSS angle units (e.g. `"10deg"`, `"-5deg"`). When omitted, no rotation is applied.
+</ParamField>
+
+<ParamField path="opacityRange" type="number[] | undefined">
+  Opacity from 0 to 1. When omitted, opacity is uncontrolled.
+</ParamField>
+
+<ParamField path="opacityInputRange" type="number[] | undefined">
+  Manual override for the scroll-progress input breakpoints that map to `opacityRange` values. Useful for non-uniform fade curves. Defaults to `[0, 0.5, 1]` for 3-value arrays or `[0, 1]` for 2-value arrays.
+</ParamField>
+
+<ParamField path="offset" type="string[]" default={['"start end"', '"end start"']}>
+  Passed directly to Framer Motion's `useScroll` `offset` option. The default `["start end", "end start"]` means progress starts when the element's top edge reaches the viewport's bottom edge and ends when its bottom edge reaches the top.
+</ParamField>
+
+<ParamField path="className" type="string" default="">
+  CSS class names added to the wrapping `motion.div`.
+</ParamField>
+
+<ParamField path="style" type="CSSProperties" default="{}">
+  Inline styles merged into the wrapping `motion.div`. The component always adds `position: "relative"` to this object, plus the computed `y`, `x`, `scale`, `rotate`, and `opacity` motion values.
+</ParamField>
+
+## How scroll progress maps to values
+
+Framer Motion's `useScroll` produces a `scrollYProgress` value from 0 (element enters) to 1 (element exits). `ParallaxElement` smooths this with a spring before mapping it to your ranges:
+
+```js
+const { scrollYProgress } = useScroll({
+  target: ref,
+  offset: offset,  // default: ["start end", "end start"]
+});
+
+const smoothProgress = useSpring(scrollYProgress, {
+  stiffness: 100,
+  damping: 30,
+  restDelta: 0.001,
+});
+```
+
+## Range syntax
+
+### Two-value ranges
+
+A two-value range maps linearly from progress 0 → 1:
+
+```js
+yRange={["10%", "-20%"]}
+// progress 0 (entering) → translateY(10%)
+// progress 1 (exiting)  → translateY(-20%)
+```
+
+### Three-value ranges (keyframes)
+
+A three-value range adds a midpoint at exactly progress 0.5:
+
+```js
+yRange={["40%", "0%", "-10%"]}
+// progress 0.0 → translateY(40%)   — still approaching from below
+// progress 0.5 → translateY(0%)    — centred in the viewport
+// progress 1.0 → translateY(-10%)  — drifting up as it exits
+```
+
+This is detected automatically:
+
+```js
+const getInputRange = (range) =>
+  range.length === 3 ? [0, 0.5, 1] : [0, 1];
+```
+
+## The spring configuration
+
+The spring (`stiffness: 100, damping: 30, restDelta: 0.001`) introduces a small lag and overshoot that makes elements feel like they have physical weight. Increasing `stiffness` makes the follow-through snappier; increasing `damping` removes oscillation.
+
+## Animation type examples
+
+<Tabs>
+  <Tab title="Slide in from side">
+    ```jsx
+    <ParallaxElement xRange={["30%", "0%", "10%"]}>
+      {/* Enters from the right, settles at center, drifts right as it exits */}
+    </ParallaxElement>
+    ```
+  </Tab>
+  <Tab title="Fade in and hold">
+    ```jsx
+    <ParallaxElement opacityRange={[0, 1, 1]}>
+      {/* Fades from invisible to full opacity and stays visible until exit */}
+    </ParallaxElement>
+    ```
+  </Tab>
+  <Tab title="Scale pop">
+    ```jsx
+    <ParallaxElement scaleRange={[0.7, 1, 0.8]}>
+      {/* Starts small, grows to full size, shrinks slightly on exit */}
+    </ParallaxElement>
+    ```
+  </Tab>
+  <Tab title="Rotate on entry">
+    ```jsx
+    <ParallaxElement rotateRange={["-10deg", "0deg", "5deg"]}>
+      {/* Tilts upright as it enters, tilts the other way as it exits */}
+    </ParallaxElement>
+    ```
+  </Tab>
+  <Tab title="Background drift">
+    ```jsx
+    <ParallaxElement yRange={["10%", "-20%"]}>
+      {/* Slow upward drift — used for background scene overlays */}
+    </ParallaxElement>
+    ```
+  </Tab>
+</Tabs>
+
+## Offset lifecycle
+
+The default `offset={["start end", "end start"]}` covers the full visual lifecycle of the element:
+
+```
+Viewport bottom ──── element top enters  → progress = 0
+                     ...
+Viewport top   ──── element bottom exits → progress = 1
+```
+
+For elements that should animate only while fully visible, you could use `offset={["start start", "end end"]}` instead.

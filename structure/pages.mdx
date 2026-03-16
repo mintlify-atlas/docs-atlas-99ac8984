@@ -1,0 +1,104 @@
+---
+title: Pages
+description: Documentation for every route-level page component in Low-Poly Ocean.
+---
+
+All pages live in `src/pages/`. Each page file is paired with a same-name CSS file for scoped styles. Routes are defined in `src/main.jsx`.
+
+## Stages
+
+**File:** `src/pages/Stages.jsx` · **Route:** `/stages`
+
+The main hub of the application. `Stages` renders a tab-based interface with three stage entries driven by an internal `stagesData` array. Each stage entry contains a title, description, and a reference to the page the user navigates to when they select it.
+
+The root path `/` redirects here via `<Navigate to="/stages" replace />`.
+
+**Responsibilities:**
+- Render stage selection tabs
+- Trigger the intro sequence before entering Stage 2
+- Gate navigation so stages are visited in order
+
+## Landing
+
+**File:** `src/pages/Landing.jsx` · **Route:** `/landing`
+
+The centrepiece of the experience. `Landing` is a long-scroll page that presents all 10 endangered marine animals as low-poly illustrations. As the user scrolls, each animal section comes into view with a parallax depth effect driven by Framer Motion's `useScroll` and `useSpring`.
+
+**Responsibilities:**
+- Render all 10 animal sections sequentially
+- Drive three-layer parallax (`bottom_layer`, `middle_layer`, `top_layer` WebP images)
+- Show the `SoundController` for ambient audio
+- Navigate to `/detail?id={animalId}` when the user selects an animal
+
+<Note>
+  `Landing` imports all 10 animal entries from `ANIMALS` in `animalConfig.js` and pairs them with bilingual content from `animalDetails.json`.
+</Note>
+
+## DetailPage
+
+**File:** `src/pages/DetailPage.jsx` · **Route:** `/detail?id={animalId}`
+
+`DetailPage` reads the `id` query parameter, looks up the matching animal in `ANIMALS` and `animalDetails.json`, and renders a full-screen detail view.
+
+The key visual is an animated polygon shard assembly: shards begin scattered and fly into their correct positions to reveal the complete low-poly animal illustration. This animation is driven by Framer Motion.
+
+The page also renders three content tabs — **Introduction**, **Threats**, and **Conservation solutions** — using the bilingual copy from `animalDetails.json`. The topic tab labels come from the `topics` object in that file.
+
+**Responsibilities:**
+- Parse `?id` from the URL and resolve the animal data
+- Animate shard assembly on mount
+- Render tabbed bilingual educational content
+- Mount `ModalDecorations` from `UnderwaterEnvironment` as background decoration
+
+```text
+Example URL: /detail?id=turtle
+```
+
+## PolygonPage
+
+**File:** `src/pages/PolygonPage.jsx` · **Route:** `/polygon`
+
+An explanatory page that answers "Why polygon art?" It uses a horizontal parallax scroll — content panels slide in from the side as the user scrolls vertically — to walk through the creative rationale behind the low-poly visual style.
+
+**Responsibilities:**
+- Render horizontal parallax content sections
+- Explain the design decision to use CSS polygon shards
+- Provide a visual showcase of the polygon technique
+
+## Intro1 and Intro2
+
+**Files:** `src/pages/Intro1.jsx`, `src/pages/Intro2.jsx`
+
+Two sequential intro screens shown before the user enters the main `Landing` experience from `Stages`. They are not directly accessible via a named public route; `Stages` controls when to render them.
+
+`Intro1` sets up the narrative context (Thai marine biodiversity under threat). `Intro2` transitions the viewer into the underwater world with an animated scene before handing off to `Landing`.
+
+**Responsibilities:**
+- Display opening narrative text with entrance animations
+- Auto-advance or respond to a user action to proceed to the next intro or to `Landing`
+
+<Tip>
+  The intro pages use Framer Motion `motion` variants with `AnimatePresence` so they can exit cleanly before the next screen mounts.
+</Tip>
+
+## OrdererPage
+
+**File:** `src/pages/OrdererPage.jsx` · **Route:** `/order`
+
+`OrdererPage` presents the animals in an ordered, list-style layout. It serves as an alternative browsing mode where users can see all 10 animals at a glance and jump directly to any animal's detail page.
+
+**Responsibilities:**
+- Render all 10 animals in a structured order
+- Provide direct navigation to `/detail?id={animalId}` for each entry
+- Display animal names in both Thai and English using data from `animalDetails.json`
+
+## Route summary
+
+| Route | Component | Description |
+| --- | --- | --- |
+| `/` | — | Redirects to `/stages` |
+| `/stages` | `Stages` | Stage selector hub |
+| `/landing` | `Landing` | Full scrolling ocean experience |
+| `/detail?id={id}` | `DetailPage` | Individual animal detail with shard animation |
+| `/polygon` | `PolygonPage` | "Why polygon?" explainer with horizontal parallax |
+| `/order` | `OrdererPage` | All-animals ordered browsing view |

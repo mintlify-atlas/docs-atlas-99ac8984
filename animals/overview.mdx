@@ -1,0 +1,78 @@
+---
+title: "Marine animals overview"
+description: "Ten endangered marine animals found in Thai waters, rendered as low-poly polygon art in the Low-Poly Ocean experience."
+---
+
+Low-Poly Ocean features ten endangered marine species found in Thai waters. Each animal is rendered as low-poly polygon art — a mosaic of triangular shards that animates as you explore the experience.
+
+The animals were chosen because they are all present in Thai seas and all face real conservation pressures: bycatch, plastic pollution, coastal development, and illegal trade. Several are listed on the IUCN Red List and protected under Thai law.
+
+## All ten animals
+
+| English name | Thai name | IUCN / Thai status | Polygon shards |
+|---|---|---|---|
+| Leatherback Turtle | เต่ามะเฟือง | Vulnerable / Protected Wildlife | 157 |
+| Dugong | พะยูน | Vulnerable / Protected Wildlife (CITES I) | 130 |
+| Irrawaddy Dolphin | โลมาอิรวดี | Endangered / Protected Wildlife (CITES I) | 125 |
+| Indo-Pacific Humpback Dolphin | โลมาชมพู | Vulnerable / Protected Wildlife | 94 |
+| Giant Manta Ray | กระเบนราหูยักษ์ | Endangered / Protected Wildlife | 251 |
+| Orca | วาฬเพชฌฆาต | Data Deficient / Protected Wildlife | 100 |
+| Sperm Whale | วาฬหัวทุย | Vulnerable / Protected Wildlife | 122 |
+| Blue Whale | วาฬสีน้ำเงิน | Endangered / Protected Wildlife (Designated Reserved Wildlife, 2022) | 433 |
+| Sawfish | ปลาฉนากยักษ์ | Critically Endangered / Protected Wildlife (CITES I) | 196 |
+| Ronin / Bowmouth Guitarfish | ปลาโรนิน | Critically Endangered / Protected Wildlife (CITES II) | 372 |
+
+## Animal pages
+
+<CardGroup cols={2}>
+  <Card title="Leatherback Turtle" href="/animals/leatherback-turtle">
+    เต่ามะเฟือง — the world's largest sea turtle, nesting on beaches in Phang Nga and Phuket.
+  </Card>
+  <Card title="Dugong" href="/animals/dugong">
+    พะยูน — a marine mammal that shares a common ancestor with elephants, living in Trang's seagrass beds.
+  </Card>
+  <Card title="Irrawaddy Dolphin" href="/animals/irrawaddy-dolphin">
+    โลมาอิรวดี — a beakless, round-headed dolphin that forages close to shore.
+  </Card>
+  <Card title="Indo-Pacific Humpback Dolphin" href="/animals/pink-dolphin">
+    โลมาชมพู — changes color from dark gray to pink-white as it matures, found in Khanom Bay.
+  </Card>
+  <Card title="Giant Manta Ray" href="/animals/stingray">
+    กระเบนราหูยักษ์ — the world's largest ray, with a wingspan up to 9 m, seen at offshore reefs in the Andaman.
+  </Card>
+  <Card title="Orca" href="/animals/orca">
+    วาฬเพชฌฆาต — apex predator with a dorsal fin up to 2 m tall, natural predator of several animals in this list.
+  </Card>
+  <Card title="Sperm Whale" href="/animals/sperm-whale">
+    วาฬหัวทุย — recognizable by its massive, box-shaped head, uses powerful burst-pulse echolocation to hunt.
+  </Card>
+  <Card title="Blue Whale" href="/animals/blue-whale">
+    วาฬสีน้ำเงิน — declared Reserved Wildlife in Thailand in May 2022, the largest animal on Earth.
+  </Card>
+  <Card title="Sawfish" href="/animals/sawfishes">
+    ปลาฉนากยักษ์ — presumed regionally extinct in Thailand after no confirmed wild sightings in over 30 years.
+  </Card>
+  <Card title="Ronin / Bowmouth Guitarfish" href="/animals/ronin">
+    ปลาโรนิน — critically endangered bottom-dweller prized for its distinctive bony head ridges.
+  </Card>
+</CardGroup>
+
+## Bilingual content system
+
+All educational content in the experience is stored in `src/data/animalDetails.json`. Each animal entry holds three topics:
+
+| Key | Thai label | Description |
+|---|---|---|
+| `intro` | ทำความรู้จัก | Introduction and physical description |
+| `threat` | ภัยคุกคาม | Threats to the species |
+| `solution` | แนวทางการแก้ไข | Conservation solutions |
+
+The content is authored in Thai, which is the primary language of the experience. The documentation pages in this section summarize the key facts in English for developers and contributors who are not Thai speakers.
+
+## Polygon shard counts
+
+Each animal artwork is built from a fixed set of triangular polygon shards defined in `src/data/animalConfig.js`. The blue whale has the most shards (433), making it the most visually complex artwork. The irrawaddy dolphin has the most shards (125) among the cetaceans with a body-length silhouette.
+
+<Note>
+  Shard counts reflect the number of `clipPath` polygon entries in the `shards[]` array for each animal in `animalConfig.js`. Shard count directly affects the visual complexity and animation weight of each artwork.
+</Note>

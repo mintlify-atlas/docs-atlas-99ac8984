@@ -1,0 +1,113 @@
+---
+title: SoundController component
+description: A fixed-position audio toggle button with a hover-revealed volume slider for background music playback.
+---
+
+`SoundController` is defined in `src/components/SoundController.jsx`. It renders a circular button fixed to the top-right corner of the viewport that toggles background music on and off. Hovering the button reveals a volume slider.
+
+## Props
+
+<ParamField path="bgSound" type="string" required>
+  URL or imported asset path for the audio file. The value is passed directly to the `src` attribute of an `<audio>` element.
+</ParamField>
+
+## Usage
+
+Import the component and its CSS, then import your audio asset:
+
+```jsx
+import SoundController from "../components/SoundController";
+import "../components/SoundController.css";
+import bgSound from "../assets/sound/bg-sound.MP3";
+
+// In your JSX:
+<SoundController bgSound={bgSound} />
+```
+
+The component is used on both the Ocean Explorer page (`Landing.jsx`) and the Detail page (`DetailPage.jsx`). On the Detail page it is conditionally hidden while the topic modal is open:
+
+```jsx
+{!showModal && <SoundController bgSound={bgSound} />}
+```
+
+## Toggle behavior
+
+The component starts in the **muted** state (`isMuted: true`). Audio begins only after a user interaction, because browser autoplay policies block sound before any gesture.
+
+### Autoplay on first interaction
+
+When the component mounts in the muted (default) state, it registers capture-phase listeners on `click`, `mousedown`, `pointerdown`, `touchstart`, `wheel`, `scroll`, `keydown`, and `pointermove`. The first event from any of these sources attempts `audio.play()`:
+
+```js
+const startAudio = () => {
+  audioRef.current.volume = volume;
+  audioRef.current.play()
+    .then(() => { setIsMuted(false); removeListeners(); })
+    .catch(() => { /* still blocked, wait */ });
+};
+```
+
+All listeners are removed once audio starts successfully.
+
+### Manual toggle
+
+Clicking the button calls `toggleSound`, which pauses or resumes the audio and flips `isMuted`. The `userIntentionalMute` ref tracks whether the user explicitly muted — if they did, the autoplay-on-interaction logic will not override their choice.
+
+```js
+if (isMuted) {
+  audioRef.current.volume = volume;
+  audioRef.current.play();
+} else {
+  userIntentionalMute.current = true;
+  audioRef.current.pause();
+}
+setIsMuted(!isMuted);
+```
+
+### Volume slider
+
+Hovering the button container animates a volume slider into view from the left (width 0 → 100 px, opacity 0 → 1, duration 0.3 s). Dragging the slider updates `volume` (0–1) in real time:
+
+- Setting volume to 0 pauses the audio and marks it as intentionally muted.
+- Setting volume above 0 while muted resumes playback.
+
+## CSS classes
+
+| Class | Element | Purpose |
+|---|---|---|
+| `.sound-control-container-v2` | Outer wrapper | Fixed position `top: 30px; right: 30px`, flex row, `z-index: 1000` |
+| `.volume-slider-wrapper-v2` | Slider wrapper | Glassmorphism pill that animates in on hover |
+| `.volume-slider-v2` | `<input type="range">` | Styled range input, white thumb with scale-on-hover |
+| `.sound-toggle` | `<button>` | 60 × 60 px circular button, frosted glass background, white glow |
+| `.sound-toggle.muted` | `<button>` when muted | Dark background, red border and glow (`#ef4444`) |
+| `.sound-icon` | Icon wrapper | 28 × 28 px flex container for the SVG icon |
+
+## Icon states
+
+The button icon changes based on `isMuted`:
+
+- **Unmuted** — speaker with two curved sound waves
+- **Muted** — speaker with an × cross drawn over it
+
+Both icons are inline SVG with `stroke="currentColor"`, so they inherit the button's text colour (white when active, red when muted).
+
+## Responsive positions
+
+```css
+/* Default */
+top: 30px; right: 30px;
+
+/* Tablet (≤ 1024 px) */
+top: 20px; right: 20px;
+
+/* Mobile (≤ 480 px) */
+top: 15px; right: 30px;
+```
+
+## Global trigger
+
+The component exposes `window.triggerSoundPlay` so that other parts of the app can imperatively start audio — for example, when transitioning into a page through a portal:
+
+```js
+window.triggerSoundPlay();
+```

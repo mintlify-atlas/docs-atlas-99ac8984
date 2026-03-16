@@ -1,0 +1,148 @@
+---
+title: Animal details page
+description: The detail viewer at /detail that shows each animal's polygon art assembly, topic tabs, and deep navigation.
+---
+
+The Detail page (`/detail`) lets you examine each of the 10 animals up close. The polygon shards scatter and reassemble as you switch animals, topic tabs open a full-screen modal with conservation information, and clicking anywhere on the canvas triggers a shard explosion effect.
+
+## Deep-linking via query parameter
+
+You can link directly to any animal using the `?id=` query parameter:
+
+```
+/detail?id=irrawaddyDolphin
+/detail?id=turtle
+/detail?id=blueWhale
+```
+
+The component reads the parameter on mount and finds the matching index in the `ANIMALS` array (case-insensitive). If the id is not found, the page defaults to index 0.
+
+```js
+const animalId = searchParams.get("id");
+const index = levels.findIndex(
+  (a) => a.id.toLowerCase() === animalId.toLowerCase()
+);
+```
+
+## Shard assembly animation
+
+Each animal is composed of dozens of polygon shards. When you first land on the page, or switch to a new animal, the shards fly in from scattered positions around the canvas and assemble into the full silhouette.
+
+### Timing constants
+
+```js
+const DURATION = 1.0;             // seconds per shard transition
+const TARGET_STAGGER_TIME = 1.25; // total assembly time regardless of shard count
+```
+
+The per-shard stagger delay is calculated dynamically so that animals with more shards don't take longer to assemble:
+
+```js
+const staggerPerShard = TARGET_STAGGER_TIME / Math.max(1, totalShards);
+```
+
+### Scatter positions
+
+When shards are invisible (before assembly or during a transition), each is placed at a position calculated using the golden angle to ensure even radial distribution:
+
+```js
+const angle = index * 137.5 * (Math.PI / 180); // golden angle
+const radius = 600 + (index % 10) * 100;       // 600–1500 px from center
+const tx = Math.cos(angle) * radius;
+const ty = Math.sin(angle) * radius;
+const rot = (index * 45) % 360;
+```
+
+### Animation direction
+
+When navigating forward (right arrow), shards assemble in ascending `order` rank — the lowest-order shards arrive first. When navigating backward (left arrow), the sequence is reversed: the highest-rank shards arrive first.
+
+```js
+const orderIndex = direction === "left" ? rank : totalShards - 1 - rank;
+const delay = orderIndex * staggerPerShard;
+```
+
+### Shimmer effect
+
+After the last shard lands, a shimmer class (`shimmer-ready`) is added to all shards. The exact finish time is calculated from the maximum delay plus the animation duration:
+
+```js
+const maxDelay = (totalShards - 1) * staggerPerShard;
+const assemblyDuration = (maxDelay + DURATION) * 1000; // ms
+```
+
+## Animal navigation
+
+Left and right arrow buttons cycle through all 10 animals in order. The index wraps around at both ends:
+
+```js
+const next = (prev + delta + levels.length) % levels.length;
+```
+
+Switching animals resets the active tab to the first topic key (`intro`). The direction of navigation controls the shard assembly order as described above.
+
+## Topic tabs
+
+Three topic tabs are rendered below the animal stage. The available topics come from `animalDetails.json`:
+
+| Key | Label | Icon |
+|---|---|---|
+| `intro` | Introduction | Search/magnifier |
+| `threat` | Threats | Warning octagon |
+| `solution` | Solutions | Target/crosshair |
+
+Clicking a tab opens a full-screen modal card that slides up from the bottom of the viewport. If the modal is already open and you click the same tab, nothing happens. Clicking a different tab fades the content out (300 ms), swaps the `displayedKey`, and fades back in.
+
+```js
+// Open modal on first click
+if (!showModal) {
+  setActiveTabKey(key);
+  setDisplayedKey(key);
+  setShowModal(true);
+  return;
+}
+
+// Switch tab with fade
+setIsChangingTab(true);
+setTimeout(() => {
+  setDisplayedKey(key);
+  setIsChangingTab(false);
+}, 300);
+```
+
+The modal also has ghost-button duplicates of the tabs inside itself so you can switch topics without closing the modal.
+
+Close the modal by clicking the `✕` button or clicking outside the card. A 450 ms lockout (`isClosing` flag) prevents double-close race conditions.
+
+## Mouse-tracking parallax
+
+Moving your mouse over the stage area shifts the shard canvas slightly, giving the animal a subtle 3D presence. The stage listens for `onMouseMove`, calculates the cursor position relative to the stage bounding box, and stores it in `mousePos`:
+
+```js
+const rect = stageRef.current.getBoundingClientRect();
+const x = e.clientX - rect.left;
+const y = e.clientY - rect.top;
+setMousePos({ x, y });
+```
+
+Moving the mouse off the stage sets `mousePos` back to `null` via `onMouseLeave`.
+
+## Click explosion effect
+
+Every time you click a topic tab button, a `ShardExplosion` fires at the cursor position. The explosion renders 10 triangular shards in white, sky-blue, and teal that fly outward and fade over 0.6 s.
+
+```js
+const triggerExplosion = (x, y) => {
+  const id = Date.now();
+  setExplosions((prev) => [...prev, { id, x, y }]);
+};
+```
+
+Each explosion cleans itself up via the `onComplete` callback when the first shard finishes its animation.
+
+## Layout components
+
+- **`UnderwaterEnvironment`** — renders the animated background behind the stage.
+- **`ShardExplosion`** — burst effect on tab clicks.
+- **`ModalDecorations`** — corner bracket accents and floating mini-shards inside the open modal.
+- **`SoundController`** — background audio toggle, hidden while the modal is open.

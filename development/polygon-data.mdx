@@ -1,0 +1,154 @@
+---
+title: Polygon data format
+description: Technical reference for the low-poly shard data format, coordinate system, animation stagger, and tooling used in Low-Poly Ocean.
+---
+
+## Overview
+
+Each animal in Low-Poly Ocean is composed of dozens of **shards** — individual CSS `clip-path` polygons layered on top of each other to form a stylised low-poly illustration. All shard data lives in `src/data/animalConfig.js` inside the `ANIMALS` array.
+
+## The coordinate system
+
+Shard vertices are expressed as **percentage values relative to the element's rendered size**. The logical coordinate space is `1600 × 900` pixels, which matches a 16:9 aspect ratio. Converting from pixel coordinates:
+
+```
+x% = (pixelX / stageWidth)  * 100  →  (pixelX / 1600) * 100
+y% = (pixelY / stageHeight) * 100  →  (pixelY / 900)  * 100
+```
+
+Because coordinates are percentages, the shard illustrations scale automatically to any container size while preserving the correct proportions.
+
+## How `clip-path: polygon()` works
+
+Each shard is a `<div>` with a `clip-path` CSS property set to a `polygon()` value:
+
+```css
+clip-path: polygon(x1% y1%, x2% y2%, x3% y3%);
+```
+
+Vertices are comma-separated `x% y%` pairs listed in order (clockwise or counter-clockwise). The browser draws a filled polygon from those points and clips the element's background colour to that shape.
+
+A typical triangular shard looks like this:
+
+```js
+{
+  clipPath: "polygon(14.250% 62.667%, 17.750% 59.889%, 20.188% 65.111%)",
+  color: "#91A4B0",
+  order: 39,
+  shard: 9,
+}
+```
+
+Rendered, this `<div>` displays only the triangle defined by those three vertices, filled with `#91A4B0`.
+
+<Note>
+  You will notice that many shards in the codebase repeat the first vertex as the last vertex: `polygon(A, B, C, A, A)`. This is a legacy artifact from the generation tooling and has no visual effect — CSS `polygon()` automatically closes the path from the last vertex back to the first.
+</Note>
+
+## The `order` field and animation stagger
+
+The `order` field controls **when each shard appears** during the assembly animation on the detail page. A lower value means the shard animates earlier.
+
+The exact delay for each shard is calculated in `DetailPage.jsx`:
+
+```js
+const MAX_SHARD_COUNT = Math.max(...ANIMALS.map((a) => a.shards.length));
+const DURATION = 1.0;            // seconds: how long one shard's movement takes
+const TARGET_STAGGER_TIME = 1.25; // seconds: total time for all shards to have started
+
+// For a given shard:
+const delay = (shard.order / MAX_SHARD_COUNT) * TARGET_STAGGER_TIME;
+```
+
+This normalises `order` against the maximum shard count across **all** animals, so the stagger timing is consistent regardless of how many shards a given animal has. A shard with `order: 0` starts immediately; a shard with an `order` equal to `MAX_SHARD_COUNT` starts at exactly `TARGET_STAGGER_TIME` seconds.
+
+**Practical guidance for assigning `order` values:**
+
+- Assign orders so that spatially adjacent shards have adjacent values — this creates a smooth ripple or wave effect across the illustration.
+- The assembly typically looks best when it starts at one feature (e.g. the head or body centre) and radiates outward.
+- Leave gaps in the order sequence if you want a pause before a distant region of the body starts assembling.
+
+## Color selection
+
+Colours are sampled directly from reference photographs of each animal. The goal is not photorealism but a **faithful low-poly approximation** — the flat polygons read as the animal when composed together.
+
+A practical workflow:
+1. Open a reference photograph in an image editor or browser-based colour picker.
+2. Sample the dominant colour within the region of the body that a particular shard covers.
+3. Slightly desaturate or shift the hue toward the adjacent shard's colour to reduce harsh contrast between neighbouring polygons.
+
+All colours in the existing animals are stored as 6-digit hex strings (e.g. `"#91A4B0"`).
+
+## A complete minimal example
+
+Here is a self-contained example of a single animal entry with three shards — enough to understand the full structure:
+
+```js
+{
+  id: "exampleFish",
+  name: "ExampleFish",
+  stageWidth: 1600,
+  stageHeight: 900,
+  shards: [
+    {
+      // Body centre — animates first
+      clipPath: "polygon(40% 45%, 55% 40%, 55% 55%)",
+      color: "#5B8EA6",
+      order: 0,
+      shard: 1,
+    },
+    {
+      // Dorsal fin — animates second
+      clipPath: "polygon(45% 35%, 55% 40%, 40% 45%)",
+      color: "#3E6B82",
+      order: 10,
+      shard: 2,
+    },
+    {
+      // Tail — animates last
+      clipPath: "polygon(55% 40%, 65% 35%, 65% 55%)",
+      color: "#4A7D96",
+      order: 25,
+      shard: 3,
+    },
+  ],
+}
+```
+
+With `MAX_SHARD_COUNT` of (say) 200, the stagger delays for these three shards would be:
+
+| Shard | `order` | Delay (`order / 200 * 1.25`) |
+|---|---|---|
+| 1 (body) | 0 | 0.000 s |
+| 2 (fin) | 10 | 0.063 s |
+| 3 (tail) | 25 | 0.156 s |
+
+## The `split_layers.py` script
+
+The project root contains a Python script, `split_layers.py`, that was used during the production of the **PolygonPage** parallax backgrounds. The PolygonPage renders a layered 3D scene in which depth-sorted image planes simulate a parallax effect as the camera moves.
+
+`split_layers.py` processed source artwork — exported from a design tool as separate layers — into individual PNG files at the correct sizes and offsets for use as `three.js` plane textures. It is not part of the live application bundle and is not needed to run or build the project. It is preserved in the repository for reference if the background artwork needs to be updated.
+
+## Tips for creating new polygon shards
+
+<Accordion title="Tracing reference images">
+  1. Import a reference photograph into a design tool such as Figma or Adobe Illustrator.
+  2. Manually draw triangles and quadrilaterals over the image, aligning edges to colour boundaries (transitions between light and shadow, or between body regions).
+  3. For each polygon, record the pixel coordinates of each vertex. Convert to percentages: `x% = (pixelX / 1600) * 100`.
+  4. Sample the dominant colour inside the polygon from the photograph.
+  5. Paste the resulting `clipPath` and `color` values into a new shard object in `animalConfig.js`.
+</Accordion>
+
+<Accordion title="Choosing polygon shapes">
+  - **Triangles** are the most common shape. They never produce concave or self-intersecting polygons and tessellate cleanly.
+  - **Quadrilaterals** work well for broad flat regions like backs and bellies.
+  - Avoid polygons with more than 5–6 vertices — they become hard to maintain and the visual benefit over multiple simpler polygons is minimal.
+  - Keep polygons roughly the same size across an animal. Very large polygons look coarse; very small ones look noisy.
+</Accordion>
+
+<Accordion title="Checking your work">
+  After adding shards, open `/detail?id=yourAnimalId` in the browser. Watch the assembly animation several times. Look for:
+  - Gaps between shards (a mismatch in a vertex coordinate — check the percentage calculation).
+  - Shards that appear in a jarring order (adjust `order` values so spatially adjacent shards assemble in sequence).
+  - Colours that read as the wrong body part (re-sample from the reference photo).
+</Accordion>

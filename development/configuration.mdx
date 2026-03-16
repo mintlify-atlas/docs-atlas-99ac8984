@@ -1,0 +1,129 @@
+---
+title: Configuration
+description: Reference for Vite, routing, ESLint, CSS architecture, and deployment configuration in Low-Poly Ocean.
+---
+
+## Vite configuration
+
+The Vite config lives at `vite.config.js` in the project root:
+
+```js vite.config.js
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    allowedHosts: true,
+    host: true,
+    // hmr: {
+    //     clientPort: 443,
+    // },
+  },
+});
+```
+
+| Option | Value | Effect |
+|---|---|---|
+| `plugins: [react()]` | `@vitejs/plugin-react` | Enables React Fast Refresh and JSX transform via Babel. |
+| `server.host` | `true` | Binds the dev server to `0.0.0.0`, making it reachable on your local network. |
+| `server.allowedHosts` | `true` | Disables the hostname check so the dev server responds to any hostname (useful in cloud dev environments). |
+
+The commented-out `hmr.clientPort: 443` block is a convenience snippet for environments that expose the dev server through an HTTPS reverse proxy (e.g. GitHub Codespaces or Daytona workspaces).
+
+## Router configuration
+
+Routing is handled by React Router v7. The router is defined in `src/main.jsx` and uses a `BrowserRouter` with the following route table:
+
+```jsx src/main.jsx
+<Routes>
+  <Route path="/" element={<Navigate to="/stages" replace />} />
+  <Route path="/detail" element={<DetailPage />} />
+  <Route path="/order" element={<OrdererPage />} />
+  <Route path="/landing" element={<Landing />} />
+  <Route path="/stages" element={<Stages />} />
+  <Route path="/polygon" element={<PolygonPage />} />
+</Routes>
+```
+
+| Path | Component | Description |
+|---|---|---|
+| `/` | Redirect | Redirects immediately to `/stages`. |
+| `/stages` | `Stages` | The main entry point. Plays an intro animation on the first visit, then shows the stage selector. |
+| `/landing` | `Landing` | Scrollable landing page listing all ten endangered animals with parallax low-poly illustrations. |
+| `/detail` | `DetailPage` | Animal detail view. Accepts an `?id=` query parameter (e.g. `/detail?id=irrawaddyDolphin`). Displays the shard assembly animation and educational content. |
+| `/order` | `OrdererPage` | Controls the order in which shards animate during the assembly sequence. |
+| `/polygon` | `PolygonPage` | Full-screen 3D parallax scene built with Three.js and `@react-three/fiber`. |
+
+### Intro skip behaviour
+
+`Stages.jsx` declares a module-level variable:
+
+```js
+let hasSeenIntroGlobal = false;
+```
+
+This flag persists for the lifetime of the browser session (it is **not** stored in `localStorage`). The first time `Stages` mounts, it plays the full intro animation and then sets `hasSeenIntroGlobal = true`. On any subsequent visit to `/stages` within the same session, the intro is skipped and the stage selector is shown immediately.
+
+## ESLint configuration
+
+The project uses ESLint 9 with a flat config file at `eslint.config.js`. The configuration composes three rule sets:
+
+| Plugin | Purpose |
+|---|---|
+| `@eslint/js` (`recommended`) | Core JavaScript best-practice rules. |
+| `eslint-plugin-react-hooks` | Enforces the Rules of Hooks and exhaustive dependency arrays in `useEffect` / `useCallback`. |
+| `eslint-plugin-react-refresh` | Warns when a module exports something that prevents React Fast Refresh from working correctly. |
+
+Run the linter with:
+
+```bash
+npm run lint
+```
+
+## CSS architecture
+
+The project follows a **co-located stylesheet** pattern: every page component has its own CSS file with the same name.
+
+```
+src/
+├── index.css          # Global reset, custom properties, font imports
+├── pages/
+│   ├── Landing.jsx
+│   ├── Landing.css
+│   ├── DetailPage.jsx
+│   ├── DetailPage.css
+│   ├── Stages.jsx
+│   ├── Stages.css
+│   ├── PolygonPage.jsx
+│   ├── PolygonPage.css
+│   ├── OrdererPage.jsx
+│   └── OrdererPage.css
+```
+
+`index.css` is imported once in `src/main.jsx` and applies global styles (base resets, font-face declarations, CSS custom properties shared across pages). Each page's CSS file is imported directly by that page's JSX component so styles remain scoped by convention.
+
+<Note>
+  There is no CSS Modules or CSS-in-JS setup. Class names are written by hand in each page's CSS file. When adding a new animal or page, follow the existing naming pattern (e.g. `.irrawaddy-dolphin-container`, `.stingray-wrapper`) to keep styles consistent.
+</Note>
+
+## Vercel deployment configuration
+
+The `vercel.json` at the project root configures a single catch-all rewrite:
+
+```json vercel.json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+This is required because React Router uses the HTML5 History API for navigation. Without this rewrite, a user who refreshes the page at `/detail?id=dugong` would receive a 404 from Vercel's CDN instead of being served `index.html`.
+
+## Environment variables
+
+This project has **no environment variables**. It is a fully static frontend application. There are no API keys, no backend endpoints, and no build-time secrets to configure.

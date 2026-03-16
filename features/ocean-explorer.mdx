@@ -1,0 +1,129 @@
+---
+title: Ocean explorer
+description: The full-page parallax scroll experience at /landing that introduces all 10 endangered marine animals.
+---
+
+The Ocean Explorer page (`/landing`) is a continuous scroll journey through Thai waters. As you scroll down, each of the 10 endangered marine animals glides into view alongside an info box. The depth indicator tracks your position from 0 m at the surface to 2000 m at the ocean floor.
+
+## Page structure
+
+The page is built from a stack of `<section>` elements, each dedicated to one animal or transitional scene. All animal visuals are rendered as polygon shard art using the `ANIMALS` data from `animalConfig.js`. Every section uses the `ParallaxElement` component to drive motion.
+
+<Note>
+See [Parallax](/features/parallax) for full documentation on `ParallaxElement` props and behavior.
+</Note>
+
+## Scroll sections
+
+<Accordion title="section-1 — Hero">
+The opening section contains the "Low-Poly Ocean" title and subtitle ("โลกในอีกมุมที่คุณไม่เคยเห็น"), animated scroll indicator, and the `top-scene.svg` overlay image. The title fades out as you begin scrolling: on desktop it disappears after ~1200 px; on mobile after ~400 px.
+
+The `LightRays` component renders five animated diagonal beams simulating sunlight filtering down through the water surface.
+</Accordion>
+
+<Accordion title="section-irrawaddy — Irrawaddy dolphin">
+The first animal enters from the right (`xRange: ["30%", "0%", "10%"]`), scales up from 0.8, and rotates from −10° to 0°. Its `AnimalInfoBox` is aligned left.
+</Accordion>
+
+<Accordion title="section-dolphin — Indo-Pacific bottlenose dolphin">
+Enters from the left (`xRange: ["-30%", "0%", "5%"]`). Info box aligned right.
+</Accordion>
+
+<Accordion title="section-stingray — Stingray">
+Enters from the right with a larger scale range (0.7 → 1 → 0.8) to emphasise its width. Info box aligned left.
+</Accordion>
+
+<Accordion title="section-dugong — Dugong">
+Enters from the left. Info box aligned right.
+</Accordion>
+
+<Accordion title="section-middle-scene — Seabed scene with turtle">
+The `middle-scene.svg` background image slides upward at a slow parallax rate (`yRange: ["10%", "-20%"]`). The turtle animal is centred vertically and uses an opaque info box (`isOpaque={true}`) because it overlaps the scene image.
+</Accordion>
+
+<Accordion title="section-ronin — Ronin shark and sawfishes">
+This section displays **two animals at once**. The ronin shark enters from the right; the sawfish enters from the left. Left and right mid-scene overlay images (`middleLeftSceneOverlay`, `middleRightSceneOverlay`) slide in from opposite sides to frame the animals.
+</Accordion>
+
+<Accordion title="section-orca — Orca">
+Enters from the right with a scale range of 0.7 → 1 → 0.8. Uses an opaque info box.
+</Accordion>
+
+<Accordion title="section-sperm-whale — Sperm whale">
+Enters from the left. Info box aligned right.
+</Accordion>
+
+<Accordion title="section-blue-whale — Blue whale">
+The largest animal enters with a scale range of 0.6 → 1 → 0.7, the widest of any animal on the page, reflecting its real-world size. Uses an opaque info box aligned left.
+</Accordion>
+
+<Accordion title="section-bottom-scene — Ocean floor">
+The final section shows no animal — just the `bottomLeftSceneOverlay` and `bottomRightSceneOverlay` images framing the bottom of the ocean, each sliding in from outside the viewport.
+</Accordion>
+
+## Animal summary
+
+| Section | Animal ID | Info box side | Enter direction |
+|---|---|---|---|
+| section-irrawaddy | `irrawaddyDolphin` | Left | Right |
+| section-dolphin | `dolphin` | Right | Left |
+| section-stingray | `stingray` | Left | Right |
+| section-dugong | `dugong` | Right | Left |
+| section-middle-scene | `turtle` | Right (opaque) | Center |
+| section-ronin | `ronin` | Left | Right |
+| section-ronin | `sawfishes` | Right | Left |
+| section-orca | `orca` | Left (opaque) | Right |
+| section-sperm-whale | `spermWhale` | Right | Left |
+| section-blue-whale | `blueWhale` | Left (opaque) | Center |
+
+## AnimalInfoBox
+
+Each animal's info box is rendered by the `AnimalInfoBox` component. It reads from `animalDetails.json` using the `animalId` prop, then renders:
+
+- The English name and Thai name side by side
+- The `content.intro` text from the animal's detail record
+- A "รายละเอียด" link button that navigates to `/detail?id={animalId}`
+
+The box itself is wrapped in a `ParallaxElement` with `yRange: ["20%", "0%", "-5%"]` and `opacityRange: [0, 1, 1]`, so it fades in and rises as you scroll into its section.
+
+```jsx
+<AnimalInfoBox
+  animalId="irrawaddyDolphin"
+  align="left"       // "left" | "right"
+  isOpaque={false}   // adds .opaque-v2 class for a solid background
+  className="irrawaddy-info-v2"
+/>
+```
+
+## Ambient scene components
+
+### LightRays
+
+Five CSS-animated diagonal beams (`.light-ray-v2.r1` through `.r5`) simulate sunlight penetrating from the surface. These are only rendered in the hero section.
+
+### MarineSnow
+
+Thirty floating particles are generated with `useMemo` at mount time, each with a random size (2–6 px), random position, and random animation duration (20–35 s) and delay (0–10 s). They drift continuously across the full-page background, adding depth and motion.
+
+### DepthIndicator
+
+A fixed ruler on the left edge of the viewport shows depth marks at 0 m, 500 m, 1000 m, 1500 m, and 2000 m. The current depth value is derived from `scrollYProgress` mapped to 0–2000 and smoothed with a spring (`stiffness: 100, damping: 30`).
+
+```js
+const depth = useTransform(scrollYProgress, [0, 1], [0, 2000]);
+const roundedDepth = useSpring(depth, { stiffness: 100, damping: 30 });
+```
+
+## Background and audio
+
+The `UnderwaterEnvironment` component renders behind all content as a 3D underwater scene. Background music starts automatically on first user interaction via `SoundController`. Both components are imported from their respective files:
+
+```jsx
+import UnderwaterEnvironment from "../components/UnderwaterEnvironment";
+import SoundController from "../components/SoundController";
+import bgSound from "../assets/sound/bg-sound.MP3";
+
+// Usage:
+<UnderwaterEnvironment />
+<SoundController bgSound={bgSound} />
+```

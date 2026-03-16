@@ -1,0 +1,121 @@
+---
+title: Installation
+description: Set up the Low-Poly Ocean project locally and deploy it to production.
+---
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+- **Node.js 18 or later** — the project uses ES modules and requires a modern Node.js runtime. Check your version with `node --version`.
+- **Git** — to clone the repository.
+- A package manager: **npm** (bundled with Node.js), **yarn**, or **pnpm**.
+
+## Clone the repository
+
+```bash
+git clone https://github.com/your-org/low-poly-ocean.git
+cd low-poly-ocean
+```
+
+## Install dependencies
+
+The project uses Vite 7, React 19, Three.js, and Framer Motion. Install all dependencies with your preferred package manager:
+
+<CodeGroup>
+
+```bash npm
+npm install
+```
+
+```bash yarn
+yarn install
+```
+
+```bash pnpm
+pnpm install
+```
+
+</CodeGroup>
+
+## Run the development server
+
+```bash
+npm run dev
+```
+
+Vite starts the development server at **http://localhost:5173**. The server is configured with `host: true` and `allowedHosts: true`, so it is also accessible from other devices on your local network using your machine's IP address.
+
+The browser will hot-reload automatically whenever you save changes to source files.
+
+## Available scripts
+
+| Script | Command | Description |
+|---|---|---|
+| `dev` | `npm run dev` | Starts the Vite development server at `localhost:5173` with HMR enabled. |
+| `build` | `npm run build` | Compiles and bundles the app for production into the `dist/` directory. |
+| `preview` | `npm run preview` | Serves the production build locally so you can verify the output before deploying. |
+| `lint` | `npm run lint` | Runs ESLint across all source files using the project's configured rules. |
+
+## Build for production
+
+```bash
+npm run build
+```
+
+Vite outputs the optimised build to `dist/`. The build includes code-splitting, asset hashing, and tree-shaking.
+
+## Preview the production build
+
+```bash
+npm run preview
+```
+
+This serves the contents of `dist/` locally so you can verify the production bundle behaves correctly before deploying. It does **not** watch for file changes.
+
+## Deploy to Vercel
+
+The repository includes a `vercel.json` at the project root that configures SPA routing for Vercel:
+
+```json vercel.json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+This rewrite rule ensures that all paths — `/stages`, `/detail`, `/landing`, etc. — are served by `index.html` so that React Router can handle client-side navigation.
+
+### Deploying via the Vercel CLI
+
+```bash
+npm install -g vercel
+vercel --prod
+```
+
+### Deploying via GitHub integration
+
+1. Push the repository to GitHub.
+2. Import the repository in the [Vercel dashboard](https://vercel.com/new).
+3. Vercel automatically detects the Vite framework and sets the correct build command (`vite build`) and output directory (`dist`).
+4. Every push to the default branch triggers a new production deployment.
+
+<Note>
+  No environment variables are required. Low-Poly Ocean is a fully static frontend application with no API keys, backend services, or build-time secrets.
+</Note>
+
+## Environment requirements
+
+| Requirement | Minimum version |
+|---|---|
+| Node.js | 18.x |
+| npm | 9.x (bundled with Node 18) |
+| Modern browser | Chrome 105+, Firefox 105+, Safari 16+ (WebGL required for Three.js) |
+
+<Warning>
+  The 3D parallax scenes on the Polygon page use WebGL via Three.js and `@react-three/fiber`. Make sure your browser and graphics drivers support WebGL 2.0. You can check at [https://get.webgl.org](https://get.webgl.org).
+</Warning>

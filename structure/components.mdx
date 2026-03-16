@@ -1,0 +1,188 @@
+---
+title: Components
+description: Documentation for every reusable component in Low-Poly Ocean.
+---
+
+All shared components live in `src/components/`. Each component is a `.jsx` file; those with significant styles have a paired `.css` file.
+
+## UnderwaterEnvironment
+
+**File:** `src/components/UnderwaterEnvironment.jsx`
+
+The primary Three.js scene component. It renders an animated 3D ocean background using React Three Fiber (`@react-three/fiber`) and helper utilities from `@react-three/drei`. Mount it behind page content by positioning the `<Canvas>` with `position: fixed` or `z-index` layering.
+
+The file exports three named exports:
+
+<AccordionGroup>
+  <Accordion title="UnderwaterEnvironment (default export)">
+    The full background scene. Includes animated water-surface geometry, ambient and directional lighting, and a subtle fog effect.
+
+    ```jsx
+    import UnderwaterEnvironment from '../components/UnderwaterEnvironment';
+
+    <UnderwaterEnvironment />
+    ```
+
+    No props are required. The scene fills its parent container.
+  </Accordion>
+
+  <Accordion title="ShardExplosion">
+    A particle burst effect triggered when a user selects an animal on the `Landing` page. Shards scatter outward from a centre point and fade out.
+
+    ```jsx
+    import { ShardExplosion } from '../components/UnderwaterEnvironment';
+
+    <ShardExplosion active={isExploding} color="#5BAFD6" />
+    ```
+
+    <ParamField path="props.active" type="boolean">
+      When `true`, plays the explosion animation. Resetting to `false` and back to `true` replays the animation.
+    </ParamField>
+
+    <ParamField path="props.color" type="string">
+      Hex color for the shard particles. Defaults to a mid-ocean blue.
+    </ParamField>
+  </Accordion>
+
+  <Accordion title="ModalDecorations">
+    Decorative 3D elements (floating bubbles, small geometric shapes) used as background decoration inside the `DetailPage` modal overlay.
+
+    ```jsx
+    import { ModalDecorations } from '../components/UnderwaterEnvironment';
+
+    <ModalDecorations />
+    ```
+
+    No props are required.
+  </Accordion>
+</AccordionGroup>
+
+## SoundController
+
+**File:** `src/components/SoundController.jsx` · **Styles:** `SoundController.css`
+
+A toggle button that plays and pauses background audio. It uses the Web Audio API via a standard HTML `<audio>` element managed through a React ref.
+
+```jsx
+import SoundController from '../components/SoundController';
+import oceanAmbience from '../assets/ocean-ambience.mp3';
+
+<SoundController bgSound={oceanAmbience} />
+```
+
+<ParamField path="props.bgSound" type="string" required>
+  URL or imported asset path for the background audio file. The component loops this audio while in the playing state.
+</ParamField>
+
+The button renders a mute/unmute icon and maintains its own `isPlaying` state internally. No external state management is needed.
+
+## AnimalCard
+
+**File:** `src/components/AnimalCard.jsx`
+
+A card that displays a single marine animal. Used in `OrdererPage` and wherever a grid or list of animals is rendered.
+
+```jsx
+import AnimalCard from '../components/AnimalCard';
+
+<AnimalCard
+  id="turtle"
+  nameEN="Leatherback Turtle"
+  nameTH="เต่ามะเฟือง"
+  onClick={() => navigate('/detail?id=turtle')}
+/>
+```
+
+<ParamField path="props.id" type="string" required>
+  The animal identifier. Must match the `id` field in both `ANIMALS` (from `animalConfig.js`) and `animalDetails.json`.
+</ParamField>
+
+<ParamField path="props.nameEN" type="string" required>
+  English common name displayed on the card.
+</ParamField>
+
+<ParamField path="props.nameTH" type="string" required>
+  Thai common name displayed on the card.
+</ParamField>
+
+<ParamField path="props.onClick" type="function">
+  Callback invoked when the user clicks the card. Typically navigates to `/detail?id={id}`.
+</ParamField>
+
+## BackToTop
+
+**File:** `src/components/BackToTop.jsx` · **Styles:** `BackToTop.css`
+
+A floating button that appears after the user has scrolled down the page. Clicking it smoothly scrolls the window back to the top using `window.scrollTo({ top: 0, behavior: 'smooth' })`.
+
+```jsx
+import BackToTop from '../components/BackToTop';
+
+// Mount anywhere in the page component tree
+<BackToTop />
+```
+
+No props are required. The component listens to the `scroll` event internally and shows or hides itself based on `window.scrollY`.
+
+## Button
+
+**File:** `src/components/Button.jsx`
+
+A general-purpose button component used throughout the app for primary actions (e.g., "Next", "Explore", "Back").
+
+```jsx
+import Button from '../components/Button';
+
+<Button onClick={handleNext} variant="primary">
+  Explore the ocean
+</Button>
+```
+
+<ParamField path="props.children" type="ReactNode" required>
+  Button label or content.
+</ParamField>
+
+<ParamField path="props.onClick" type="function">
+  Click handler.
+</ParamField>
+
+<ParamField path="props.variant" type="string" default="primary">
+  Visual style variant. Controls background color and border treatment.
+</ParamField>
+
+<ParamField path="props.disabled" type="boolean" default="false">
+  Disables the button and applies reduced-opacity styling.
+</ParamField>
+
+## PreviewStage
+
+**File:** `src/components/PreviewStage.jsx`
+
+A preview widget used inside the `Stages` page to give the user a visual taste of what each stage contains before they navigate to it.
+
+```jsx
+import PreviewStage from '../components/PreviewStage';
+
+<PreviewStage
+  stageNumber={2}
+  title="Low-poly ocean"
+  description="Scroll through the ocean and discover 10 endangered animals."
+  onSelect={() => navigate('/landing')}
+/>
+```
+
+<ParamField path="props.stageNumber" type="number" required>
+  The stage index (1, 2, or 3). Used for display and to determine the preview visual.
+</ParamField>
+
+<ParamField path="props.title" type="string" required>
+  Stage title rendered as the card heading.
+</ParamField>
+
+<ParamField path="props.description" type="string" required>
+  Short description of what the stage contains.
+</ParamField>
+
+<ParamField path="props.onSelect" type="function">
+  Callback invoked when the user activates this stage. Typically calls `navigate()` to the stage's route.
+</ParamField>

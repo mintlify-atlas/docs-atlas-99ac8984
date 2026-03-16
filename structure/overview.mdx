@@ -1,0 +1,95 @@
+---
+title: Project overview
+description: High-level tour of the Low-Poly Ocean codebase — folder layout, technology stack, and key design patterns.
+---
+
+## Folder structure
+
+```text
+low-poly-ocean/
+├── index.html              # HTML entry point
+├── package.json
+├── vite.config.js          # Vite + React plugin configuration
+├── vercel.json             # SPA rewrite rules for Vercel
+└── src/
+    ├── main.jsx            # React root, React Router route definitions
+    ├── index.css           # Global styles and CSS custom properties
+    ├── assets/             # SVG scene overlays and audio files
+    ├── components/         # Reusable UI and 3D components
+    ├── data/               # Static animal configuration and bilingual content
+    ├── images/             # WebP layer images and illustration assets
+    └── pages/              # Route-level page components and their CSS modules
+```
+
+### Directory purposes
+
+<AccordionGroup>
+  <Accordion title="src/assets/">
+    Contains SVG files used as scene overlays (foreground and background decorations) and audio files for the ambient ocean soundtrack. Assets here are imported directly into components rather than referenced by URL.
+  </Accordion>
+
+  <Accordion title="src/components/">
+    Reusable pieces shared across pages: the Three.js underwater environment, the sound toggle, animal cards, navigation helpers, and the stage preview widget. See [Components](/structure/components) for full documentation.
+  </Accordion>
+
+  <Accordion title="src/data/">
+    Two data files drive the entire animal experience:
+    - `animalConfig.js` — polygon shard definitions for all 10 animals
+    - `animalDetails.json` — bilingual (Thai/English) educational content
+
+    See [Data layer](/structure/data) for full documentation.
+  </Accordion>
+
+  <Accordion title="src/images/">
+    WebP images used for the parallax layer system (`bottom_layer`, `middle_layer`, `top_layer`), the decorative paper ship, and illustration assets for the orca and bear. Images are imported as ES module assets so Vite fingerprints them at build time.
+  </Accordion>
+
+  <Accordion title="src/pages/">
+    Each page component lives alongside its scoped CSS file. Pages map 1-to-1 with React Router routes. See [Pages](/structure/pages) for full documentation.
+  </Accordion>
+</AccordionGroup>
+
+## Technology stack
+
+<CardGroup cols={2}>
+  <Card title="React 19 + Vite 7" icon="react">
+    The UI layer is built with React 19. Vite 7 handles bundling, HMR during development, and production builds via `@vitejs/plugin-react`.
+  </Card>
+  <Card title="React Router 7" icon="route">
+    Client-side routing with `react-router-dom`. All routes are defined in `src/main.jsx`. The root path redirects to `/stages`.
+  </Card>
+  <Card title="React Three Fiber + Drei" icon="cube">
+    The underwater background scene is rendered with `@react-three/fiber` (a React renderer for Three.js r182) and helpers from `@react-three/drei`.
+  </Card>
+  <Card title="Framer Motion 12" icon="wand-magic-sparkles">
+    Page transitions, the shard assembly animation on `DetailPage`, and scroll-linked parallax effects all use Framer Motion's `useScroll`, `useSpring`, and `motion` primitives.
+  </Card>
+</CardGroup>
+
+## Key design patterns
+
+### CSS polygon shards
+
+Each animal is composed of up to ~125 individual `<div>` elements. Each element uses a `clip-path: polygon(...)` value defined in `animalConfig.js` to cut a triangular or irregular shard shape. The shards are layered and colored to form the full low-poly illustration without any `<canvas>` or SVG drawing.
+
+```jsx
+// Simplified shard rendering
+<div
+  style={{
+    clipPath: shard.clipPath,
+    backgroundColor: shard.color,
+  }}
+/>
+```
+
+### Scroll-linked parallax
+
+`Landing.jsx` and `PolygonPage.jsx` use Framer Motion's `useScroll` to track scroll progress and `useSpring` to produce smooth, physics-based motion. Multiple image layers (`bottom_layer`, `middle_layer`, `top_layer`) translate at different speeds to create a depth illusion.
+
+### React Three Fiber background
+
+`UnderwaterEnvironment` mounts an R3F `<Canvas>` behind the page content. The scene includes animated water geometry and lighting. The component also exports `ShardExplosion` (a particle burst triggered on animal selection) and `ModalDecorations` (decorative 3D elements in the detail modal).
+
+### Bilingual content
+
+All educational copy is stored in `animalDetails.json` with separate `intro`, `threat`, and `solution` fields per animal. The topic labels themselves (`ทำความรู้จัก`, `ภัยคุกคาม`, `แนวทางการแก้ไข`) are stored under the `topics` key so they can be rendered without hardcoding Thai strings in components.

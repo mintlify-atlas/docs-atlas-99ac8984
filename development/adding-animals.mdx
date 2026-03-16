@@ -1,0 +1,208 @@
+---
+title: Adding animals
+description: Step-by-step guide for adding a new endangered marine animal to the Low-Poly Ocean experience.
+---
+
+Each animal in Low-Poly Ocean requires entries in three places: the polygon shard config, the educational content JSON, and the Landing page layout. Follow the steps below to add a new animal end-to-end.
+
+<Steps>
+
+<Step title="Create the polygon shard data in animalConfig.js">
+
+Open `src/data/animalConfig.js` and add a new object to the `ANIMALS` array.
+
+```js src/data/animalConfig.js
+export const ANIMALS = [
+  // ... existing animals
+  {
+    id: "yourAnimalId",       // used in routes: /detail?id=yourAnimalId
+    name: "YourAnimalName",   // PascalCase display name
+    stageWidth: 1600,         // coordinate space width (keep at 1600)
+    stageHeight: 900,         // coordinate space height (keep at 900)
+    shards: [
+      {
+        clipPath: "polygon(10% 20%, 15% 30%, 5% 35%)",
+        color: "#4A7C8E",
+        order: 0,
+        shard: 1,
+      },
+      // ... more shards
+    ],
+  },
+];
+```
+
+**Understanding the coordinate system**
+
+All vertex positions in `clipPath` are expressed as **percentages relative to the element's bounding box**, which is mapped to a `1600 × 900` coordinate space. To convert pixel coordinates from a reference image:
+
+```
+x% = (pixelX / 1600) * 100
+y% = (pixelY / 900)  * 100
+```
+
+For example, a point at pixel `(400, 225)` becomes `25% 25%`.
+
+**Shard fields reference**
+
+<ParamField path="clipPath" type="string" required>
+  A CSS `polygon()` value whose vertices are percentage pairs. Each vertex is `x% y%`, and vertices are comma-separated. Shards are typically triangles (3 vertices) or quadrilaterals (4 vertices). To close a polygon visually, the first vertex is often repeated as the last vertex.
+</ParamField>
+
+<ParamField path="color" type="string" required>
+  Hex colour for this shard. Sample colours directly from a reference photograph of the animal to achieve the characteristic low-poly aesthetic. Use a colour picker or an image-sampling tool.
+</ParamField>
+
+<ParamField path="order" type="number" required>
+  Controls when this shard appears during the assembly animation on the detail page. Shards with lower `order` values animate earlier. Assign consecutive integers to create a smooth wave across the body. See [polygon data](/development/polygon-data) for the exact delay formula.
+</ParamField>
+
+<ParamField path="shard" type="number" required>
+  A 1-based index that identifies this shard within the animal. Used for debugging and tooling. Set it to the position of the shard in the `shards` array (first shard is `1`, second is `2`, etc.).
+</ParamField>
+
+<Tip>
+  Build up the shard array incrementally. Start with 10–15 shards covering the main body silhouette, then add detail shards for fins, head markings, and colouration. Load `/detail?id=yourAnimalId` in the browser to preview the assembly in real time as you add shards.
+</Tip>
+
+</Step>
+
+<Step title="Add animal details to animalDetails.json">
+
+Open `src/data/animalDetails.json` and add a new object inside the `animals` array:
+
+```json src/data/animalDetails.json
+{
+  "animals": [
+    // ... existing animals
+    {
+      "id": "yourAnimalId",
+      "nameEN": "Your Animal Name",
+      "nameTH": "ชื่อภาษาไทย",
+      "content": {
+        "intro": "Introduction text about the animal's biology, habitat, and status...",
+        "threat": "Description of the threats facing this species...",
+        "solution": "Conservation measures and how to help if you encounter one..."
+      }
+    }
+  ]
+}
+```
+
+The `id` field must exactly match the `id` you used in `animalConfig.js`. The three content topics correspond to the tabs shown on the detail page:
+
+| Key | Thai label | Content |
+|---|---|---|
+| `intro` | ทำความรู้จัก | Biology, physical description, habitat, and conservation status. |
+| `threat` | ภัยคุกคาม | Human-caused and natural threats to the species. |
+| `solution` | แนวทางการแก้ไข | Legal protections, rescue procedures, and how the public can help. |
+
+<Note>
+  Content is currently written in Thai. If you are adding an animal in a different language, keep the structure the same — the `topics` object at the top of the JSON maps keys to the labels displayed in the UI.
+</Note>
+
+</Step>
+
+<Step title="Add the animal to the Landing page">
+
+Open `src/pages/Landing.jsx`. Animals are rendered as sections in a vertically scrolling layout. Each section wraps a `<ParallaxElement>` component containing the shard rendering, alongside an `<AnimalInfoBox>` component.
+
+Add a new `<section>` following the pattern of existing animals:
+
+```jsx src/pages/Landing.jsx
+<section className="your-animal-section">
+  <ParallaxElement
+    yRange={[-40, 40]}
+    xRange={[-10, 10]}
+    scaleRange={[0.95, 1.05]}
+    rotateRange={[-2, 2]}
+  >
+    <div className="your-animal-container">
+      {ANIMALS.find((a) => a.id === "yourAnimalId")?.shards.map((shard, index) => (
+        <div
+          key={index}
+          className="shard"
+          style={{
+            clipPath: shard.clipPath,
+            backgroundColor: shard.color,
+            width: "100%",
+            height: "100%",
+            position: "absolute",
+            top: 0,
+            left: 0,
+          }}
+        />
+      ))}
+    </div>
+  </ParallaxElement>
+
+  <AnimalInfoBox animalId="yourAnimalId" align="right" />
+</section>
+```
+
+**`<ParallaxElement>` props**
+
+| Prop | Type | Description |
+|---|---|---|
+| `yRange` | `[number, number]` | Vertical translation in pixels as the user scrolls past the section. `[-40, 40]` means the element moves from 40 px above to 40 px below its resting position. |
+| `xRange` | `[number, number]` | Horizontal translation in pixels. Use small values (±10) for a subtle drift effect. |
+| `scaleRange` | `[number, number]` | Scale multiplier. `[0.95, 1.05]` produces a gentle zoom. |
+| `rotateRange` | `[number, number]` | Rotation in degrees. Use small values (±2–3) to avoid disorienting the illustration. |
+
+**`<AnimalInfoBox>` props**
+
+| Prop | Type | Description |
+|---|---|---|
+| `animalId` | `string` | Must match the `id` in `animalConfig.js` and `animalDetails.json`. |
+| `align` | `"left" \| "right"` | Controls which side of the section the info box appears on. Alternate between `"left"` and `"right"` across successive animals for visual variety. |
+
+</Step>
+
+<Step title="Add a CSS wrapper class">
+
+Open `src/pages/Landing.css` and add styles for the new section and its container. Follow the existing pattern:
+
+```css src/pages/Landing.css
+.your-animal-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 0 5%;
+}
+
+.your-animal-container {
+  position: relative;
+  width: 800px;   /* adjust to match the animal's visual weight */
+  height: 450px;
+  flex-shrink: 0;
+}
+```
+
+The `.your-animal-container` dimensions define the aspect ratio of the shard canvas. Because shard coordinates are expressed as percentages, the shards will scale correctly at any container size — but the aspect ratio should match `stageWidth / stageHeight` (16:9 by default).
+
+</Step>
+
+<Step title="Test the detail page">
+
+Navigate to the detail page for your new animal:
+
+```
+http://localhost:5173/detail?id=yourAnimalId
+```
+
+Verify that:
+
+- The shard assembly animation plays and all shards appear in the correct positions.
+- The `order` values produce a natural, flowing assembly sequence (shards spread outward from a focal point rather than appearing randomly).
+- All three content tabs (intro, threat, solution) display the correct text from `animalDetails.json`.
+- The animal name renders correctly in both English and Thai.
+
+<Tip>
+  If the assembly looks choppy, review the `order` values. Shards that are spatially adjacent should have adjacent `order` values. A jump from `order: 2` to `order: 40` on neighbouring shards creates a visible gap in the animation wave.
+</Tip>
+
+</Step>
+
+</Steps>

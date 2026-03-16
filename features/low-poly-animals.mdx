@@ -1,0 +1,135 @@
+---
+title: Low-poly animals
+description: How CSS clip-path polygon shards compose into animal silhouettes and how the stagger animation system works.
+---
+
+Every animal in Low-Poly Ocean is drawn entirely in the browser using CSS `clip-path: polygon()`. There are no SVG files or canvas elements — the entire silhouette is assembled from dozens of triangular or quadrilateral `<div>` elements, each clipped to a geometric shape and filled with a flat colour.
+
+## The shard data structure
+
+All animals are exported from `src/data/animalConfig.js` as the `ANIMALS` array. Each entry has this shape:
+
+```js
+{
+  id: "irrawaddyDolphin",       // unique identifier used in URLs and lookups
+  name: "IrrawaddyDolphin",    // display name
+  stageWidth: 1600,             // coordinate space width in px
+  stageHeight: 900,             // coordinate space height in px
+  shards: [
+    {
+      clipPath: "polygon(7.313% 48.222%, 7.688% 52.444%, 4.742% 54.000%)",
+      color: "#C0CECE",
+      order: 7,
+      shard: 1,
+    },
+    // ... up to 125+ more shards
+  ],
+}
+```
+
+### Shard fields
+
+<ParamField path="clipPath" type="string">
+  A CSS `polygon()` value where each vertex is expressed as a percentage of the stage dimensions. Because percentages are used, the animal scales cleanly to any container size.
+</ParamField>
+
+<ParamField path="color" type="string">
+  A hex colour string applied as `backgroundColor`. Adjacent shards use slightly different tones to create the faceted low-poly look.
+</ParamField>
+
+<ParamField path="order" type="number">
+  Controls the sequence of the assembly animation. Shards with lower `order` values assemble first. Values are not required to be sequential — the system sorts and normalises them into a 0-based rank before calculating delays.
+</ParamField>
+
+<ParamField path="shard" type="number">
+  A human-readable index assigned during data authoring. Not used at runtime.
+</ParamField>
+
+## Coordinate space
+
+Each animal has a `stageWidth` and `stageHeight` that define the coordinate space the percentage clip-paths are relative to. The Irrawaddy dolphin uses 1600 × 900 px. The container element is sized to maintain this aspect ratio:
+
+```js
+const stageWidth  = animal.stageWidth  ?? 1000;
+const stageHeight = animal.stageHeight ?? 1000;
+const ratio       = stageWidth / stageHeight;
+```
+
+CSS then uses `--ratio` to maintain the correct proportions regardless of the actual rendered size.
+
+## How clip-path composes the silhouette
+
+All shards are positioned absolutely inside a wrapper `div`. Each shard occupies the full `100% × 100%` of the wrapper but is clipped to its polygon shape:
+
+```jsx
+<div className="shard" style={{
+  clipPath: shard.clipPath,
+  backgroundColor: shard.color,
+  width: "100%",
+  height: "100%",
+  position: "absolute",
+  top: 0,
+  left: 0,
+}} />
+```
+
+Because every shard starts from the same full-size box and is clipped to a non-overlapping region of it, the collection of shards fills the silhouette with no gaps when fully assembled.
+
+## The stagger animation system
+
+The Detail page pools shards up to `MAX_SHARD_COUNT` (the highest shard count across all animals) so that React can reuse the same DOM nodes when switching animals, making transitions smooth.
+
+### Rank normalisation
+
+Before calculating delays, `order` values are converted to a 0-based rank:
+
+```js
+// Sort by order, then assign sequential ranks
+const withIndex = animal.shards.map((shard, index) => ({
+  originalIndex: index,
+  order: typeof shard.order === "number" ? shard.order : index,
+}));
+withIndex.sort((a, b) => a.order - b.order);
+
+const ranks = new Array(withIndex.length);
+withIndex.forEach((item, rank) => {
+  ranks[item.originalIndex] = rank;
+});
+```
+
+This prevents sparse or large `order` values (e.g. 0, 7, 39, 125) from creating huge gaps in the stagger timing.
+
+### Delay calculation
+
+```js
+const TARGET_STAGGER_TIME = 1.25; // seconds
+const staggerPerShard = TARGET_STAGGER_TIME / Math.max(1, totalShards);
+const delay = rank * staggerPerShard;
+```
+
+Because `staggerPerShard` is computed from the total number of shards, every animal assembles in approximately 1.25 seconds regardless of how many shards it has.
+
+### CSS transition
+
+Each shard's position, clip-path, and opacity are all driven by inline CSS transitions rather than JS animation loops:
+
+```js
+transition: `
+  clip-path  ${DURATION}s ${delay}s cubic-bezier(0.25, 0.8, 0.25, 1),
+  -webkit-clip-path ${DURATION}s ${delay}s cubic-bezier(0.25, 0.8, 0.25, 1),
+  opacity    0.4s    ${delay}s ease-out,
+  transform  ${DURATION}s ${delay}s cubic-bezier(0.25, 0.8, 0.25, 1)
+`
+```
+
+## Shard counts
+
+The Irrawaddy dolphin (`irrawaddyDolphin`) has **125 shards**. Other animals have comparable counts. The more shards an animal has, the smoother and more detailed its silhouette appears.
+
+## The conservation metaphor
+
+The fragmented structure of the polygon art is intentional. The project's central message — delivered explicitly on the [Polygon Art page](/features/polygon-art) — is:
+
+> "If any piece goes missing, the whole image collapses — just like an ecosystem. If one species goes extinct, the entire balance is disrupted."
+
+The assembly animation itself reinforces this: watching the scattered shards fly in and snap together mirrors the precarious act of keeping an endangered ecosystem whole.
